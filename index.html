@@ -16,7 +16,7 @@
     label { font-weight: bold; display: block; margin-top: 15px; }
     input, select {
       width: 100%; padding: 10px; margin-top: 5px;
-      border: 1px solid #ccc; border-radius: 6px;
+      border: 1px solid #ccc; border-radius: 6px; box-sizing: border-box; /* Ajout pour inclure padding et border dans la largeur */
     }
     button {
       margin-top: 25px; padding: 12px; background: #005bad; color: white;
@@ -69,16 +69,16 @@
   <h1>🔊 Estimez votre ROI avec Louis</h1>
   <div class="container">
     <div class="form-section">
-      <label>Email :</label>
+      <label for="email">Email :</label> <!-- Ajout de l'attribut for -->
       <input type="email" id="email" placeholder="exemple@entreprise.com" required>
-      <label>Nombre d’employés exposés au bruit :</label>
-      <input type="number" id="nbEmployees" placeholder="Ex : 48">
-      <label>Nombre de personnes ayant besoin de communiquer :</label>
-      <input type="number" id="nbEquipped" placeholder="Ex : 30">
-      <label>Durée moyenne d’exposition par jour (en heures) :</label>
-      <input type="number" id="exposure" placeholder="Ex : 7">
+      <label for="nbEmployees">Nombre d’employés exposés au bruit :</label> <!-- Ajout de l'attribut for -->
+      <input type="number" id="nbEmployees" placeholder="Ex : 48" required>
+      <label for="nbEquipped">Nombre de personnes ayant besoin de communiquer :</label> <!-- Ajout de l'attribut for -->
+      <input type="number" id="nbEquipped" placeholder="Ex : 30" required>
+      <label for="exposure">Durée moyenne d’exposition par jour (en heures) :</label> <!-- Ajout de l'attribut for -->
+      <input type="number" id="exposure" placeholder="Ex : 7" required>
 
-      <label>Secteur industriel :</label>
+      <label for="sector">Secteur industriel :</label> <!-- Ajout de l'attribut for -->
       <select id="sector" required>
         <option value="">-- Sélectionnez un secteur --</option>
         <option>Aéronautique</option>
@@ -133,12 +133,36 @@
 
   <script>
     function calculerROI() {
-      const nbEquipped = parseInt(document.getElementById('nbEquipped').value) || 0;
+      // Récupération des valeurs des champs
+      const email = document.getElementById('email').value;
+      const nbEmployeesStr = document.getElementById('nbEmployees').value;
+      const nbEquippedStr = document.getElementById('nbEquipped').value;
+      const exposureStr = document.getElementById('exposure').value;
+      const sector = document.getElementById('sector').value;
+
+      // Vérification si tous les champs sont remplis
+      if (!email || !nbEmployeesStr || !nbEquippedStr || !exposureStr || !sector) {
+        alert("Veuillez remplir tous les champs du formulaire.");
+        return; // Arrête l'exécution de la fonction si un champ est vide
+      }
+
+      const nbEmployees = parseInt(nbEmployeesStr) || 0;
+      const nbEquipped = parseInt(nbEquippedStr) || 0;
+      const exposure = parseFloat(exposureStr) || 0;
+
+      // Vérification supplémentaire pour s'assurer que les nombres sont valides après conversion
+      // (surtout si l'utilisateur entre du texte dans un champ de type number, bien que le navigateur puisse le bloquer)
+      if (isNaN(nbEmployees) || isNaN(nbEquipped) || isNaN(exposure)) {
+          alert("Veuillez entrer des valeurs numériques valides pour le nombre d'employés, le nombre de personnes à équiper et la durée d'exposition.");
+          return;
+      }
+
+
       const PRIX = 549, FORM = 1000, MAINT = 100;
       const SMIC_HORAIRE = 11.65, TEMPS_GAGNE_H = 18 / 60, JOURS = 220;
       const gain = nbEquipped * TEMPS_GAGNE_H * SMIC_HORAIRE * JOURS;
       const invest = (nbEquipped * PRIX) + FORM + MAINT;
-      const roi = ((gain - invest) / invest) * 100;
+      const roi = invest !== 0 ? ((gain - invest) / invest) * 100 : 0; // Ajout d'une vérification pour éviter la division par zéro
       const score = Math.floor(Math.random() * 5) + 95;
       const stars = '★'.repeat(5);
 
@@ -152,11 +176,11 @@
 
       // Envoi au webhook Make
       const payload = {
-        email: document.getElementById('email').value,
-        nbEmployees: parseInt(document.getElementById('nbEmployees').value),
+        email: email,
+        nbEmployees: nbEmployees,
         nbEquipped: nbEquipped,
-        exposure: parseFloat(document.getElementById('exposure').value),
-        sector: document.getElementById('sector').value,
+        exposure: exposure,
+        sector: sector,
         roi: roi.toFixed(0),
         economies: Math.round(gain)
       };
@@ -166,7 +190,6 @@
         headers: { 'Content-Type': 'application/json' }
       }).then(res => console.log("✅ Données envoyées à Make :", res.status))
         .catch(err => console.error("❌ Erreur d'envoi à Make :", err));
-
     }
   </script>
 </body>
